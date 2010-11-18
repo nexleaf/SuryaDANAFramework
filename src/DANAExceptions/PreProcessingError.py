@@ -11,17 +11,21 @@ class PreProcessingError(DANAException):
         successfully
     """
    
-    def __init__(self, str, preProcessResult):
+    def __init__(self, str, result, err):
         """ Contructor
         
             Keyword Arguments:
-            str              -- String corresponding to the reason why 
-                                preProcessing failed.
+            str        -- String corresponding to the reason why 
+                          preProcessing failed.
+            result     -- The preProcessing Result object.
+            err        -- Error object
         """
         self.phase = "PPROC"
         self.str = str
+        self.result = result
+        self.err = err
 
     def __str__(self):
         """ String representation
         """
-        return self.str
+        return self.str + " " + str(self.err) 

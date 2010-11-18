@@ -18,23 +18,13 @@ class DANAFramework:
         
         The Data ANAlysis Framework crunches data in any Processing List of the following format:
         
-        Processing List:
-                ______________________________________________________________________________
-        Item1: | UploadData1 ->  CalibrationConfig1 - CalibrationConfig2 - CalibrationConfig3 |
-               |                         |                    |                    |          |
-               |                      Result1              Result1              Result1       |
-               |                         |                   ...                  ...         |
-               |                      Result2                                                 |
-               |                        ...                                                   |
+        Processing List: 
+                _______________________________________________________________________________
+        Item1: | UploadData1 ->  PreProcessConfig -> CalibrationConfig(ApplicationSpecific)   |
                |______________________________________________________________________________|
                                                     |
                 ______________________________________________________________________________
         Item2: | UploadData2 ->  CalibrationConfig1 - CalibrationConfig2 - CalibrationConfig3 |
-               |   ...                   |                    |                    |          |
-               |                      Result1              Result1              Result1       |
-               |                         |                   ...                  ...         |
-               |                      Result2                                                 |
-               |                        ...                                                   |
                |______________________________________________________________________________|
                                                     |
                                                    ...
@@ -44,21 +34,22 @@ class DANAFramework:
         
                            PROCESS STEP                                METHOD
                            ------------                                ------
-        Step 0: to fetch the Items from a repository implement       | (getDataItems)
+        Step 0: to fetch the Items from a repository implement        | (getDataItems)
          
-        Step 1: To check if the current Item is valid implement      | (isValid).
+        Step 1: To check if the current Item is valid implement       | (isValid).
         
-        Step 2: To preprocess the UploadData in the Item implement   | (preProcessDataItem).
+        Step 2: Get the name of the item                              | (getItemName).
         
-        Step 3: To fetch any new calibration configurations implement| (getCalibrationConfiguration).
+        Step 3: Get the pre-processing configuration                  | (getPreProcessingConfiguration).
         
-        Step 4: The framework iterates through the calibration       |
-                configurations for analysis.                         
+        Step 4: To preprocess the UploadData in the Item implement    | (preProcessDataItem).
+        
+        Step 5: To fetch any new calibration configurations implement | (getComputationConfiguration).
                 
-        Step 5: To DANA the pre-processed UploadData under a given   | (computeDANAResult).
-                Calibration COnfiguration implement                  
+        Step 6: To compute the DANA result under the calibration      | (computeDANAResult).
+                configuration implement
                                                                       
-        Step 6: To save the computation result implement             | (saveDANAResult). 
+        Step 7: To save the computation result implement              | (saveDANAResult). 
         
         Other Methods: 
         Error :      To handle any error generated in the framework  | (onError). 
@@ -66,16 +57,13 @@ class DANAFramework:
                      
         Processed? : To see if the current Item has been processed 
                      under a given CalibrationConfiguration implement| (isProcessed).
-                     
-        Epoch :      Where (Epoch - 1) represents the number of times| (getCurrentEpoch)
-                     the Item was processed already.
         
-        getItemName : Gets a string representing the current Item    | (getItemName) 
         
         Implementors using this framework need to define:
-        preProcessingResult object -- which will be used in the computation of results, and
-                                      indexing into calibration data.
-        danaResult object -- which is the final result that will be saved to a repository.
+        preProcessingResult object -- which stores the results on pre-Processing the dataItem, and 
+                                      will be used in the computation of results, and indexing into 
+                                      calibration data.
+        computationResult object -- which stores the results after computation of DANA results.
         
     """
     
@@ -113,49 +101,53 @@ class DANAFramework:
         """
         pass
     
-    def preProcessDataItem(self, itemname, dataItem, epoch):
+    def preProcessDataItem(self, itemname, dataItem):
         """ Implementors must override this method to preProcess the UploadData and 
             extract features that will be used in the data analysis and in 
             fetching the calibration data.
             
             Keyword Arguments:
-            itemname -- String representing the dataItem
-            dataItem -- The Item containing the UploadData
-            epoch    -- The current epoch
+            itemname                   -- String representing the dataItem.
+            dataItem                   -- The Item containing the UploadData.
             
             Results:
             preprocessingResult, which is an application specific object that 
             contains the results on preProcessing the data.
+            
+            throws PreProcessingError.
         """
         pass
     
-    def computeDANAResult(self, itemname, dataItem, epoch, calibrationConfiguration, preProcessingResult):
+    def computeDANAResult(self, itemname, dataItem, preProcessingResult):
         """ Implementors must override this method to compute the Analysis Results coupling
             the pre-processing result, data from the calibration configurations, and the
             preprocessing result.
             
             Keyword Arguments:
-            itemname                  -- A String representing the dataItem.
-            dataItem                  -- The Item containing the UploadData.
-            epoch                     -- The current epoch.
-            calibrationConfigurations -- The Calibration Data.
-            preProcessingResult       -- The results obtained after pre-processing the 
-                                         UploadData.
+            itemname                   -- A String representing the dataItem.
+            dataItem                   -- The Item containing the UploadData.
+            preProcessingResult        -- The results obtained after pre-processing the 
+                                          UploadData.
                                          
             Results:
             danaResult, again an application specific object that is the result of the
             Data Analysis computation.
+            
+            throws ResultComputationError.
         """
         pass
     
-    def saveDANAResult(self, itemname, dataItem, epoch):
+    def saveDANAResult(self, itemname, dataItem, preProcessingResult, computationResult):
         """ Implementors must override this method to save the results of a Data Analysis 
             computation.
             
             Keyword Arguments:
-            itemname -- String representing the dataItem.
-            dataItem -- The Item containing the UploadData.
-            epoch    -- The current epoch
+            itemname          -- String representing the dataItem.
+            dataItem          -- The Item containing the UploadData.
+            preProcessingResult  -- The Result obtained on preProcessing the dataItem.
+            computationResult -- The Result obtained after computation of results for the dataItem.
+            
+            throws ResultSavingError. 
         """
         pass
     
@@ -189,18 +181,6 @@ class DANAFramework:
         """
         pass
     
-    def isProcessed(self, dataItem):
-        """ Implementors must override this method to indicate if a dataItem has been
-            processed already.
-            
-            Keyword Arguments:
-            dataItem -- a single Item in the processing list.
-            
-            Returns:
-            True, if processed, false otherwise.
-        """
-        pass
-    
     def onError(self, itemname, dataItem, err, phase):
         """ Implementors must override this method, which will be invoked 
             whenever an error occurs in processing the given dataItem.
@@ -208,26 +188,22 @@ class DANAFramework:
             Keyword Arguments:
             itemname -- string representing the dataItem
             dataItem -- A single Item in the processing list.
-            epoch    -- An integer representing the current Epoch
             err      -- Error object, depending on the implementation can 
                         be a string reporting a message or a list of params 
                         to operate on. It could essentially store information 
                         about the dataItem's processing result in the list 
             phase    -- phase indicates which phase of the Data Analysis failed.
         
-                        PPROC : data_item flag invalid, state invalid reason
-                        CALIB : data_item flag invalid, state invalid reason
-                        COMPU : for a data_item->calib_conf->state result as pre-processed but status is failed
-                        SAVIN : data_item flag invalid, state invalid reason
+                        PPROCCALIB : PPROC : COMPUCALIB : COMPU : SAVIN : 
                         
                         Errors in saving results to the database must be logged i.e. raise critical error
         """
         pass
     
-    def getCalibrationConfigurations(self, itemname, dataItem, preProcessingResult):
-        """ Implementors must override this method to fetch any new calibration
-            data and add it to the list of known calibration configurations
-            for a dataItem.
+    def getComputationConfiguration(self, itemname, dataItem, preProcessingResult):
+        """ Implementors must override this method to get any new calibration
+            data derived from the preProcessingResult if the overrideFlag is True,
+            otherwise, the default calibration data is used.
             
             Keyword Arguments:
             itemname            -- String representing the dataItem
@@ -236,20 +212,24 @@ class DANAFramework:
                                    preProcessing the data
                                    
             Returns:
-            An iteratable object containing a list of calibration configs
-            corresponding to the given dataItem
+            A computationConfiguration under which computation should occur.
+            
+            throws CompuCalibrationError.
         """
         pass
     
-    def getCurrentEpoch(self, dataItem):
-        """ Implementors must override this method to fetch the current epoch
-            NOTE: each time an item is processed its epoch increases.
+    def getPreProcessingConfiguration(self, itemname, dataItem):
+        """ Implementors must override this method to get any preProcessing data
+            associated with the given dataItem.uploaddata alias processEntity.
             
             Keyword Arguments:
+            itemname -- String representing the dataItem.
             dataItem -- A single Item in the processing list
             
             Returns:
-            epoch number
+            A preProcessingConfiguration under which pre-processing should occur.
+            
+            throws PprocCalibrationError.
         """
     
     def danaJob(self, force=False):
@@ -273,47 +253,42 @@ class DANAFramework:
             # For every dataItem retrieved 
             for dataItem in dataItems:
                 try:
-                    if force or (not self.isProcessed(dataItem)):
+                    
+                    # Step 1:
+                    # Run a validation step on the input data item
+                    if not self.isValid(dataItem):
+                        continue
+                    
+                    # Step 2:
+                    # Fetch an item description to be used as a string to refer to the 
+                    # current dataitem
+                    itemname = self.getItemName(dataItem)
+                    
+                    # Step 3:
+                    # Fetch preProcessing information and store it with the dataItem structure
+                    self.getPreProcessingConfiguration(itemname, dataItem)
+                    
+                    # Step 4:
+                    # Preprocess the dataItem
+                    preProcessingResult = self.preProcessDataItem(itemname, dataItem)
                         
-                        # Step 1:
-                        # Run a validation step on the input data item
-                        if not self.isValid(dataItem):
-                            continue
+                    # Step 5:
+                    # Fetch the following:
+                    # a) Calibration Data relevant to information in preProcessingResult, misc field if overrideFlag is True.
+                    # b) use the calibration data in the process list AS-IS if overrideFlag is False.
+                    self.getComputationConfiguration(itemname, dataItem, preProcessingResult)
                         
-                        # Fetch an item description to be used as a string to refer to the 
-                        # current dataitem
-                        itemname = self.getItemName(dataItem)
+                    # Step 6:
+                    # Compute Result and store the result (along with the calibrationConfiguration)
+                    computationResult = self.computeDANAResult(itemname, dataItem, preProcessingResult)
                         
-                        # Fetch the current epoch number
-                        epoch = self.getCurrentEpoch(dataItem)
-                        
-                        # Step 2:
-                        # Preprocess the dataItem
-                        preProcessingResult = self.preProcessDataItem(itemname, dataItem, epoch)
-                            
-                        # Step 3:
-                        # Fetch the following:
-                        # a) Calibration Data relevant to information in preProcessingResult
-                        # b) Any new Calibration Data that was not previously in the list of
-                        #    calibration configurations.
-                        calibrationConfigurations = self.getCalibrationConfigurations(itemname, dataItem, preProcessingResult)
-                        
-                        # Step 4:
-                        # Iterate through all the calibration configurations and compute the
-                        # DataAnalysis Result.
-                        for calibrationConfiguration in calibrationConfigurations:
-                            
-                            # Step 5:
-                            # Compute Result and store the result (along with the calibrationConfiguration)
-                            self.computeDANAResult(itemname, dataItem, epoch, calibrationConfiguration, preProcessingResult)
-                            
-                        # Step 6:
-                        # The danaResult obtained here is for the given dataItem corres. to
-                        # the given calibrationConfiguration.
-                        self.saveDANAResult(itemname, dataItem, epoch)
-
+                    # Step 7:
+                    # The danaResult obtained here is for the given dataItem corres. to
+                    # the given calibrationConfiguration.
+                    self.saveDANAResult(itemname, dataItem, preProcessingResult, computationResult)
+    
                 except DANAException, err:
-                    self.onError(itemname, dataItem, epoch, err, err.phase)
+                    self.onError(itemname, dataItem, err, err.phase)
                     continue
                 
         except Exception, err:
@@ -321,7 +296,7 @@ class DANAFramework:
        
         return ExitCode.Success, ""
     
-    def run(self, pidfile, programname, timeinterval, force=False):
+    def run(self, pidfile, programname, timeinterval):
         """ This method runs the danaJob every timeinterval subject to the 
             constraint that if force is True, we process all the images
             that were already processed.
@@ -331,8 +306,6 @@ class DANAFramework:
                             at a time.
             programname  -- Name of the application specific dana.
             timeinterval -- an integer time in seconds after which to repeat dana
-            force        -- a boolean, if true we should re-process the processed
-                            images as well
         """
         
         if not getLock(pidfile, programname):
@@ -340,10 +313,9 @@ class DANAFramework:
         
         while True:
             self.log.info("Running Data ANAlysis", extra=self.danatags)
-            if force:
-                exitcode, err = self.danaJob(force)
-            else:
-                exitcode, err = self.danaJob()
+            
+            exitcode, err = self.danaJob()
+            
             self.log.info("Done Running Data ANAlysis", extra=self.danatags)
             if exitcode is not ExitCode.Success:
                 self.log.critical("computation cycle failed" + err, extra=self.danatags)

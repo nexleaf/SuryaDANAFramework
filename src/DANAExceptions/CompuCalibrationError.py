@@ -5,22 +5,24 @@ Created on Nov 12, 2010
 '''
 from DANAExceptions.DANAException import DANAException
 
-class CalibrationError(DANAException):
+class CompuCalibrationError(DANAException):
     """ This Exception is thrown if there was an 
         error fetching calibration data corres.
         to the dataItem.
         
     """
    
-    def __init__(self, err):
+    def __init__(self, err, preProcessingResult):
         """ Contructor
         
             Keyword Arguments:
-            err              -- The Exception that caused a Calibration
-                                Error.
+            err                 -- The Exception that caused a Calibration
+                                   Error.
+            preProcessingResult -- The results on preProcessing.
         """
-        self.phase = "CALIB"
+        self.phase = "COMPUCALIB"
         self.err = err
+        self.preProcessingResult = preProcessingResult
         
     def __str__(self):
         """ String representation

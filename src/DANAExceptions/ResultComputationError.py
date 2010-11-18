@@ -12,15 +12,20 @@ class ResultComputationError(DANAException):
         to a dataItem.
     """
    
-    def __init__(self, err):
+    def __init__(self, err, preProcessingResult, computationResult):
         """ Contructor
         
             Keyword Arguments:
-            err              -- The Exception that caused a Calibration
-                                Error.
+            err                 -- The Exception that caused a Calibration
+                                   Error.
+            preProcessingResult -- The results on preProcessing an item.
+            computationResult   -- The results on computing DANA results
+                                   
         """
         self.phase = "COMPU"
         self.err = err
+        self.preProcessingResult = preProcessingResult
+        self.computationResult = computationResult
         
     def __str__(self):
         """ String representation
