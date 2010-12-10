@@ -21,11 +21,11 @@ class PreProcessingError(DANAException):
             err        -- Error object
         """
         self.phase = "PPROC"
-        self.str = str
+        self.str = "" if str == None else str
         self.result = result
-        self.err = err
-
+        self.err = "" if err == None else err
+    
     def __str__(self):
         """ String representation
         """
-        return self.str + " " + str(self.err) 
+        return self.str + " " + str(self.err)

@@ -6,6 +6,8 @@ Created on Nov 11, 2010
 
 import sys
 import time
+import os
+import traceback
 
 from Logging.Logger import getLog
 from Locking.AppLock import getLock
@@ -292,7 +294,7 @@ class DANAFramework:
                     continue
                 
         except Exception, err:
-            return ExitCode.Failed, str(sys.exc_info())
+            return ExitCode.Failed, traceback.format_exc()
        
         return ExitCode.Success, ""
     
@@ -320,4 +322,3 @@ class DANAFramework:
             if exitcode is not ExitCode.Success:
                 self.log.critical("computation cycle failed" + err, extra=self.danatags)
             time.sleep(timeinterval) 
-        
