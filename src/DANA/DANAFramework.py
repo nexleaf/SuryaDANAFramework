@@ -321,4 +321,8 @@ class DANAFramework:
             self.log.info("Done Running Data ANAlysis", extra=self.danatags)
             if exitcode is not ExitCode.Success:
                 self.log.critical("computation cycle failed" + err, extra=self.danatags)
-            time.sleep(timeinterval) 
+            if timeinterval >= 0:
+                time.sleep(timeinterval)
+            else:
+                sys.exit(0)
+                
