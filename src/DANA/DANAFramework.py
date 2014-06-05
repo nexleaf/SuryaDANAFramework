@@ -43,7 +43,7 @@ class DANAFramework:
         Step 2: Get the name of the item                              | (getItemName).
         
         Step 3: Get the pre-processing configuration                  | (getPreProcessingConfiguration).
-        
+
         Step 4: To preprocess the UploadData in the Item implement    | (preProcessDataItem).
         
         Step 5: To fetch any new calibration configurations implement | (getComputationConfiguration).
@@ -269,17 +269,18 @@ class DANAFramework:
                     # Step 3:
                     # Fetch preProcessing information and store it with the dataItem structure
                     self.getPreProcessingConfiguration(itemname, dataItem)
-                    
-                    # Step 4:
-                    # Preprocess the dataItem
-                    preProcessingResult = self.preProcessDataItem(itemname, dataItem)
-                        
-                    # Step 5:
+
+                    # Step 5:   # reordered on 2012/06/08 to support alternate detector 
                     # Fetch the following:
                     # a) Calibration Data relevant to information in preProcessingResult, misc field if overrideFlag is True.
                     # b) use the calibration data in the process list AS-IS if overrideFlag is False.
-                    self.getComputationConfiguration(itemname, dataItem, preProcessingResult)
-                        
+                    #self.getComputationConfiguration(itemname, dataItem, preProcessingResult)
+                    self.getComputationConfiguration(itemname, dataItem, None)
+
+                    # Step 4:
+                    # Preprocess the dataItem
+                    preProcessingResult = self.preProcessDataItem(itemname, dataItem)
+                                            
                     # Step 6:
                     # Compute Result and store the result (along with the calibrationConfiguration)
                     computationResult = self.computeDANAResult(itemname, dataItem, preProcessingResult)
@@ -290,6 +291,7 @@ class DANAFramework:
                     self.saveDANAResult(itemname, dataItem, preProcessingResult, computationResult)
     
                 except DANAException, err:
+                    self.log.error("DANA caught exception:", extra=self.danatags, exc_info=True)
                     self.onError(itemname, dataItem, err, err.phase)
                     continue
                 
